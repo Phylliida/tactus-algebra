@@ -173,6 +173,105 @@ pub proof fn lemma_neg_of_eqv_zero<T: AdditiveGroup>(a: T)
     T::axiom_eqv_transitive(a.neg(), T::zero().neg(), T::zero());
 }
 
+///  Four-term regrouping: (a+b) + (c+d) ≡ (a+c) + (b+d).
+pub proof fn lemma_add_regroup<T: AdditiveCommutativeMonoid>(a: T, b: T, c: T, d: T)
+    ensures a.add(b).add(c.add(d)).eqv(a.add(c).add(b.add(d))),
+{
+    //  (a+b)+(c+d) ≡ a+(b+(c+d))
+    T::axiom_add_associative(a, b, c.add(d));
+    //  b+(c+d) ≡ (b+c)+d ≡ (c+b)+d ≡ c+(b+d)
+    T::axiom_add_associative(b, c, d);
+    lemma_eqv_flip(b.add(c).add(d), b.add(c.add(d)));
+    T::axiom_add_commutative(b, c);
+    T::axiom_add_congruence_left(b.add(c), c.add(b), d);
+    T::axiom_add_associative(c, b, d);
+    T::axiom_eqv_transitive(b.add(c.add(d)), b.add(c).add(d), c.add(b).add(d));
+    T::axiom_eqv_transitive(b.add(c.add(d)), c.add(b).add(d), c.add(b.add(d)));
+    //  a+(b+(c+d)) ≡ a+(c+(b+d)) ≡ (a+c)+(b+d)
+    lemma_add_cong_right(a, b.add(c.add(d)), c.add(b.add(d)));
+    T::axiom_add_associative(a, c, b.add(d));
+    lemma_eqv_flip(a.add(c).add(b.add(d)), a.add(c.add(b.add(d))));
+    T::axiom_eqv_transitive(
+        a.add(b).add(c.add(d)),
+        a.add(b.add(c.add(d))),
+        a.add(c.add(b.add(d))),
+    );
+    T::axiom_eqv_transitive(
+        a.add(b).add(c.add(d)),
+        a.add(c.add(b.add(d))),
+        a.add(c).add(b.add(d)),
+    );
+}
+
+///  Uniqueness of the additive inverse: x + y ≡ 0 implies x ≡ -y.
+pub proof fn lemma_uniq_neg<T: AdditiveGroup>(x: T, y: T)
+    requires x.add(y).eqv(T::zero()),
+    ensures x.eqv(y.neg()),
+{
+    //  x ≡ x+0 ≡ x+(y+(-y)) ≡ (x+y)+(-y) ≡ 0+(-y) ≡ -y
+    T::axiom_add_zero_right(x);
+    lemma_eqv_flip(x.add(T::zero()), x);
+    T::axiom_add_inverse_right(y);
+    lemma_eqv_flip(y.add(y.neg()), T::zero());
+    lemma_add_cong_right(x, T::zero(), y.add(y.neg()));
+    T::axiom_add_associative(x, y, y.neg());
+    lemma_eqv_flip(x.add(y).add(y.neg()), x.add(y.add(y.neg())));
+    T::axiom_add_congruence_left(x.add(y), T::zero(), y.neg());
+    lemma_add_zero_left(y.neg());
+    T::axiom_eqv_transitive(x, x.add(T::zero()), x.add(y.add(y.neg())));
+    T::axiom_eqv_transitive(x, x.add(y.add(y.neg())), x.add(y).add(y.neg()));
+    T::axiom_eqv_transitive(x, x.add(y).add(y.neg()), T::zero().add(y.neg()));
+    T::axiom_eqv_transitive(x, T::zero().add(y.neg()), y.neg());
+}
+
+///  (-a) + (-b) ≡ -(a + b).
+pub proof fn lemma_neg_add<T: AdditiveGroup>(a: T, b: T)
+    ensures a.neg().add(b.neg()).eqv(a.add(b).neg()),
+{
+    //  ((-a)+(-b)) + (a+b) ≡ ((-a)+a) + ((-b)+b) ≡ 0+0 ≡ 0, then uniqueness.
+    lemma_add_regroup(a.neg(), b.neg(), a, b);
+    T::axiom_add_commutative(a.neg(), a);
+    T::axiom_add_inverse_right(a);
+    T::axiom_eqv_transitive(a.neg().add(a), a.add(a.neg()), T::zero());
+    T::axiom_add_commutative(b.neg(), b);
+    T::axiom_add_inverse_right(b);
+    T::axiom_eqv_transitive(b.neg().add(b), b.add(b.neg()), T::zero());
+    lemma_add_cong_both(a.neg().add(a), T::zero(), b.neg().add(b), T::zero());
+    lemma_zero_add_zero::<T>();
+    T::axiom_eqv_transitive(
+        a.neg().add(a).add(b.neg().add(b)),
+        T::zero().add(T::zero()),
+        T::zero(),
+    );
+    T::axiom_eqv_transitive(
+        a.neg().add(b.neg()).add(a.add(b)),
+        a.neg().add(a).add(b.neg().add(b)),
+        T::zero(),
+    );
+    lemma_uniq_neg(a.neg().add(b.neg()), a.add(b));
+}
+
+///  a * (-b) ≡ -(a * b).
+pub proof fn lemma_mul_neg_right<T: Ring>(a: T, b: T)
+    ensures a.mul(b.neg()).eqv(a.mul(b).neg()),
+{
+    //  a·(-b) + a·b ≡ a·((-b)+b) ≡ a·0 ≡ 0, then uniqueness of the inverse.
+    T::axiom_mul_distributes_left(a, b.neg(), b);
+    lemma_eqv_flip(a.mul(b.neg().add(b)), a.mul(b.neg()).add(a.mul(b)));
+    T::axiom_add_commutative(b.neg(), b);
+    T::axiom_add_inverse_right(b);
+    T::axiom_eqv_transitive(b.neg().add(b), b.add(b.neg()), T::zero());
+    lemma_mul_cong_right(a, b.neg().add(b), T::zero());
+    T::axiom_mul_zero_right(a);
+    T::axiom_eqv_transitive(a.mul(b.neg().add(b)), a.mul(T::zero()), T::zero());
+    T::axiom_eqv_transitive(
+        a.mul(b.neg()).add(a.mul(b)),
+        a.mul(b.neg().add(b)),
+        T::zero(),
+    );
+    lemma_uniq_neg(a.mul(b.neg()), a.mul(b));
+}
+
 //  ---- field laws ----
 
 ///  Reciprocal cancellation: (x * y⁻¹) * y ≡ x for nonzero y.

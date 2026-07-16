@@ -15,3 +15,6 @@ pub mod poly_mul;
 
 #[cfg(verus_keep_ghost)]
 pub mod poly_div;
+
+#[cfg(verus_keep_ghost)]
+pub mod poly_ring;
