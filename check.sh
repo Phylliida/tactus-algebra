@@ -23,7 +23,10 @@ if [[ ! -x "$VERUS" ]]; then
   exit 1
 fi
 
-"$VERUS" --lean-backend -V cache --crate-type=lib "$HERE/src/lib.rs" --emit-lean "$@" 2>&1 | tee "$LOG"
+# NOTE: do NOT add --emit-lean here — it emits .lean files WITHOUT running
+# Lean (a floor-only measurement mode; tactus-group-theory's check.sh carries
+# it as a leftover). This script must run the real package-check Lean gate.
+"$VERUS" --lean-backend -V cache --crate-type=lib "$HERE/src/lib.rs" "$@" 2>&1 | tee "$LOG"
 rc="${PIPESTATUS[0]}"
 echo "[check.sh] full output saved to $LOG (exit $rc)" >&2
 exit "$rc"
