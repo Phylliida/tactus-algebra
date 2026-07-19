@@ -168,7 +168,7 @@ impl Rational {
 
 impl Equivalence for Rational {
     open spec fn eqv(self, other: Self) -> bool {
-        self.eqv_spec(other)
+        self.num * other.denom() == other.num * self.denom()
     }
 
     proof fn axiom_eqv_reflexive(a: Self) {}
@@ -407,7 +407,7 @@ impl Ring for Rational {
 
 impl PartialOrder for Rational {
     open spec fn le(self, other: Self) -> bool {
-        self.le_spec(other)
+        self.num * other.denom() <= other.num * self.denom()
     }
 
     proof fn axiom_le_reflexive(a: Self) {}
@@ -446,7 +446,15 @@ impl PartialOrder for Rational {
 
 impl OrderedRing for Rational {
     open spec fn lt(self, other: Self) -> bool {
-        self.lt_spec(other)
+        self.num * other.denom() < other.num * self.denom()
+    }
+
+    open spec fn ge(self, other: Self) -> bool {
+        other.lt(self)
+    }
+
+    open spec fn gt(self, other: Self) -> bool {
+        self.lt(other) == false && self.eqv(other) == false
     }
 
     proof fn axiom_le_total(a: Self, b: Self) {}

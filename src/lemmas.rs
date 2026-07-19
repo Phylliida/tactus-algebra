@@ -6,7 +6,9 @@ use vstd::prelude::*;
 use crate::traits::equivalence::Equivalence;
 use crate::traits::additive_commutative_monoid::AdditiveCommutativeMonoid;
 use crate::traits::additive_group::AdditiveGroup;
+use crate::traits::partial_order::PartialOrder;
 use crate::traits::ring::Ring;
+use crate::traits::ordered_ring::OrderedRing;
 use crate::traits::field::Field;
 
 verus! {
@@ -270,6 +272,46 @@ pub proof fn lemma_mul_neg_right<T: Ring>(a: T, b: T)
         T::zero(),
     );
     lemma_uniq_neg(a.mul(b.neg()), a.mul(b));
+}
+
+//  ---- order laws ----
+
+///  Monotonicity of addition, packaged: a <= b implies a + c <= b + c.
+pub proof fn lemma_le_add_right<T: OrderedRing>(a: T, b: T, c: T)
+    requires a.le(b),
+    ensures a.add(c).le(b.add(c)),
+{
+    T::axiom_le_add_monotone(a, b, c);
+}
+
+///  Reflexivity of le, packaged for quantifier bodies.
+pub proof fn lemma_le_refl<T: OrderedRing>(a: T)
+    ensures a.le(a),
+{
+    T::axiom_le_reflexive(a);
+}
+
+///  Transitivity of le, packaged for chaining.
+pub proof fn lemma_le_trans<T: OrderedRing>(a: T, b: T, c: T)
+    requires a.le(b), b.le(c),
+    ensures a.le(c),
+{
+    T::axiom_le_transitive(a, b, c);
+}
+
+///  Totality of le, packaged.
+pub proof fn lemma_le_total<T: OrderedRing>(a: T, b: T)
+    ensures a.le(b) || b.le(a),
+{
+    T::axiom_le_total(a, b);
+}
+
+///  Multiplication by a non-negative element preserves order, packaged.
+pub proof fn lemma_le_mul_nonneg_right<T: OrderedRing>(a: T, b: T, c: T)
+    requires a.le(b), T::zero().le(c),
+    ensures a.mul(c).le(b.mul(c)),
+{
+    T::axiom_le_mul_nonneg_monotone(a, b, c);
 }
 
 //  ---- field laws ----

@@ -109,6 +109,14 @@ impl OrderedRing for int {
         self < other
     }
 
+    open spec fn ge(self, other: Self) -> bool {
+        other.lt(self)
+    }
+
+    open spec fn gt(self, other: Self) -> bool {
+        self.lt(other) == false && self.eqv(other) == false
+    }
+
     proof fn axiom_le_total(a: Self, b: Self) {}
 
     proof fn axiom_lt_iff_le_and_not_eqv(a: Self, b: Self) {}

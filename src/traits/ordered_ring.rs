@@ -15,15 +15,17 @@ pub trait OrderedRing: Ring + PartialOrder {
     ///  Strict less-than comparison.
     spec fn lt(self, other: Self) -> bool;
 
-    ///  Greater-than-or-equal: a >= b
-    open spec fn ge(self, other: Self) -> bool {
-        other.lt(self)
-    }
+    ///  Greater-than-or-equal: a >= b.
+    ///
+    ///  A required method (no default) because the Lean backend's class
+    ///  emission mishandles default method bodies (self-qualified projection
+    ///  reference inside the declaring class + mangled `impl__N_default_*`
+    ///  field names on instances). See
+    ///    tactus/BUG-trait-default-methods-emission.md.
+    spec fn ge(self, other: Self) -> bool;
 
-    ///  Strict greater-than: a > b
-    open spec fn gt(self, other: Self) -> bool {
-        self.lt(other) == false && self.eqv(other) == false
-    }
+    ///  Strict greater-than: a > b. Required method; see `ge`.
+    spec fn gt(self, other: Self) -> bool;
 
     //  ---- axioms: total order ----
 

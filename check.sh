@@ -23,6 +23,15 @@ if [[ ! -x "$VERUS" ]]; then
   exit 1
 fi
 
+# Mathlib on LEAN_PATH: `by (nonlinear_arith)` proofs emit
+# `import Mathlib.Tactic.Linarith` into the stmt files, and the verifier's
+# spawned `lean` only sees the prelude/defs dirs plus whatever LEAN_PATH we
+# export (it prepends its own dirs — see lean_process.rs). Resolved once from
+# the tactus lean-project; skipped silently if lake/lean aren't on PATH.
+if [[ -z "${LEAN_PATH:-}" && -d "$HERE/../tactus/lean-project" ]]; then
+  export LEAN_PATH="$(cd "$HERE/../tactus/lean-project" && lake env printenv LEAN_PATH 2>/dev/null || true)"
+fi
+
 # NOTE: do NOT add --emit-lean here — it emits .lean files WITHOUT running
 # Lean (a floor-only measurement mode; tactus-group-theory's check.sh carries
 # it as a leftover). This script must run the real package-check Lean gate.
