@@ -45,6 +45,13 @@ pub proof fn lemma_padd_zpoly_left<T: Ring>(z: Seq<T>, p: Seq<T>)
 pub proof fn lemma_shiftk_zero<T: Ring>(p: Seq<T>)
     ensures shiftk(p, 0) == p,
 {
+    //  Ext-equal decomposition for the Lean gate: the bc_4 new-index rewrite's
+    //  side condition is exactly the forall guard (no arithmetic), and the
+    //  remaining ite collapses by split + omega on the guard.
+    vstd::seq::axiom_seq_ext_equal(shiftk(p, 0), p);
+    assert(shiftk(p, 0).len() == p.len());
+    assert forall|i: int| 0 <= i < shiftk(p, 0).len() implies shiftk(p, 0)[i] == p[i] by {
+    }
     assert(shiftk(p, 0) =~= p);
 }
 
@@ -162,7 +169,16 @@ pub proof fn lemma_pmul_push<T: Ring>(p: Seq<T>, c: T, q: Seq<T>)
     if p.len() == 0 {
         //  p.push(c) is the singleton [c].
         assert(p.push(c).len() == 1);
+        //  Explicit axiom calls for the Lean gate: each call's requires is an
+        //  omega-closable arithmetic obligation, and its ensures arrives as a
+        //  ground rewrite hyp the closers can apply without side conditions.
+        vstd::seq::axiom_seq_push_index_same(p, c, 0);
         assert(p.push(c)[0] == c);
+        vstd::seq::axiom_seq_subrange_len(p.push(c), 1, p.push(c).len() as int);
+        assert(p.push(c).skip(1).len() == Seq::<T>::empty().len());
+        assert forall|i: int| 0 <= i < p.push(c).skip(1).len() implies p.push(c).skip(1)[i] == Seq::<T>::empty()[i] by {
+        }
+        vstd::seq::axiom_seq_ext_equal(p.push(c).skip(1), Seq::<T>::empty());
         assert(p.push(c).skip(1) =~= Seq::<T>::empty());
         //  lhs = padd(scale(c, q), shiftk(pmul(empty, q), 1))
         //      = padd(scale(c, q), shiftk(empty, 1))  — an eqv-zero tail.
@@ -187,7 +203,23 @@ pub proof fn lemma_pmul_push<T: Ring>(p: Seq<T>, c: T, q: Seq<T>)
         let t = p.skip(1);
         //  Structure of the pushed sequence.
         assert(p.push(c).len() == p.len() + 1);
+        vstd::seq::axiom_seq_push_index_different(p, c, 0);
         assert(p.push(c)[0] == h);
+        vstd::seq::axiom_seq_subrange_len(p, 1, p.len() as int);
+        vstd::seq::axiom_seq_subrange_len(p.push(c), 1, p.push(c).len() as int);
+        assert(p.push(c).skip(1).len() == t.push(c).len());
+        assert forall|i: int| 0 <= i < p.push(c).skip(1).len() implies p.push(c).skip(1)[i] == t.push(c)[i] by {
+            vstd::seq::axiom_seq_subrange_index(p.push(c), 1, p.push(c).len() as int, i);
+            if i + 1 < p.len() as int {
+                vstd::seq::axiom_seq_push_index_different(p, c, i + 1);
+                vstd::seq::axiom_seq_subrange_index(p, 1, p.len() as int, i);
+                vstd::seq::axiom_seq_push_index_different(t, c, i);
+            } else {
+                vstd::seq::axiom_seq_push_index_same(p, c, i + 1);
+                vstd::seq::axiom_seq_push_index_same(t, c, i);
+            }
+        }
+        vstd::seq::axiom_seq_ext_equal(p.push(c).skip(1), t.push(c));
         assert(p.push(c).skip(1) =~= t.push(c));
         assert(pmul(p.push(c), q) == padd(scale(h, q), shiftk(pmul(t.push(c), q), 1)));
         //  Induction hypothesis on the tail.
@@ -200,6 +232,11 @@ pub proof fn lemma_pmul_push<T: Ring>(p: Seq<T>, c: T, q: Seq<T>)
         );
         lemma_shiftk_padd(pmul(t, q), shiftk(scale(c, q), t.len()), 1);
         lemma_shiftk_compose(scale(c, q), t.len());
+        //  Bridge len(t)+1 = len(p) for the Lean gate, cast-free so the
+        //  rewrite chain stays purely ground.
+        assert(shiftk(shiftk(scale(c, q), t.len()), 1) == shiftk(scale(c, q), (t.len() + 1) as nat));
+        assert((t.len() + 1) as nat == p.len());
+        assert(shiftk(scale(c, q), (t.len() + 1) as nat) == shiftk(scale(c, q), p.len()));
         assert(shiftk(shiftk(scale(c, q), t.len()), 1) == shiftk(scale(c, q), p.len()));
         lemma_peqv_trans(
             shiftk(pmul(t.push(c), q), 1),

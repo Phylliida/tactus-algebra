@@ -490,6 +490,9 @@ pub proof fn lemma_pmul_empty_right<T: Ring>(q: Seq<T>)
         lemma_zpoly_empty::<T>();
     } else {
         let t = q.skip(1);
+        //  Len fact for the Lean gate: makes the recursion-termination obligation
+        //  omega-closable (see lemma_pmul_push).
+        vstd::seq::axiom_seq_subrange_len(q, 1, q.len() as int);
         assert(pmul(q, Seq::<T>::empty())
             == padd(scale(q[0], Seq::<T>::empty()), shiftk(pmul(t, Seq::<T>::empty()), 1)));
         assert(scale(q[0], Seq::<T>::empty()) =~= Seq::<T>::empty());
@@ -510,6 +513,9 @@ pub proof fn lemma_pmul_cong_right<T: Ring>(p: Seq<T>, q1: Seq<T>, q2: Seq<T>)
         lemma_peqv_refl(pmul(p, q1));
     } else {
         let t = p.skip(1);
+        //  Len fact for the Lean gate: makes the recursion-termination obligation
+        //  omega-closable (see lemma_pmul_push).
+        vstd::seq::axiom_seq_subrange_len(p, 1, p.len() as int);
         assert(pmul(p, q1) == padd(scale(p[0], q1), shiftk(pmul(t, q1), 1)));
         assert(pmul(p, q2) == padd(scale(p[0], q2), shiftk(pmul(t, q2), 1)));
         lemma_scale_cong_poly(p[0], q1, q2);
@@ -533,6 +539,9 @@ pub proof fn lemma_pmul_padd_right<T: Ring>(p: Seq<T>, q: Seq<T>, r: Seq<T>)
     } else {
         let h = p[0];
         let t = p.skip(1);
+        //  Len fact for the Lean gate: makes the recursion-termination obligation
+        //  omega-closable (see lemma_pmul_push).
+        vstd::seq::axiom_seq_subrange_len(p, 1, p.len() as int);
         assert(pmul(p, padd(q, r)) == padd(scale(h, padd(q, r)), shiftk(pmul(t, padd(q, r)), 1)));
         //  head: h·(q+r) ≡ h·q + h·r
         lemma_scale_padd(h, q, r);
@@ -575,6 +584,9 @@ pub proof fn lemma_pmul_pneg_right<T: Ring>(p: Seq<T>, q: Seq<T>)
     } else {
         let h = p[0];
         let t = p.skip(1);
+        //  Len fact for the Lean gate: makes the recursion-termination obligation
+        //  omega-closable (see lemma_pmul_push).
+        vstd::seq::axiom_seq_subrange_len(p, 1, p.len() as int);
         assert(pmul(p, pneg(q)) == padd(scale(h, pneg(q)), shiftk(pmul(t, pneg(q)), 1)));
         lemma_scale_pneg(h, q);
         lemma_pmul_pneg_right(t, q);
@@ -685,6 +697,9 @@ pub proof fn lemma_pmul_singleton_right<T: Ring>(q: Seq<T>, v: T)
     } else {
         let h = q[0];
         let t = q.skip(1);
+        //  Len fact for the Lean gate: makes the recursion-termination obligation
+        //  omega-closable (see lemma_pmul_push).
+        vstd::seq::axiom_seq_subrange_len(q, 1, q.len() as int);
         assert(pmul(q, seq![v]) == padd(scale(h, seq![v]), shiftk(pmul(t, seq![v]), 1)));
         //  head: scale(h, [v]) is the singleton [h·v] ≡ [v·h]
         assert(scale(h, seq![v]) =~= seq![h.mul(v)]);
@@ -734,6 +749,9 @@ pub proof fn lemma_pmul_shiftk_right<T: Ring>(q: Seq<T>, x: Seq<T>, k: nat)
     } else {
         let h = q[0];
         let t = q.skip(1);
+        //  Len fact for the Lean gate: makes the recursion-termination obligation
+        //  omega-closable (see lemma_pmul_push).
+        vstd::seq::axiom_seq_subrange_len(q, 1, q.len() as int);
         assert(pmul(q, shiftk(x, k)) == padd(scale(h, shiftk(x, k)), shiftk(pmul(t, shiftk(x, k)), 1)));
         //  head
         lemma_scale_shiftk(h, x, k);
@@ -789,6 +807,9 @@ pub proof fn lemma_pmul_scale_right<T: Ring>(r: Seq<T>, h: T, q: Seq<T>)
     } else {
         let c = r[0];
         let t = r.skip(1);
+        //  Len fact for the Lean gate: makes the recursion-termination obligation
+        //  omega-closable (see lemma_pmul_push).
+        vstd::seq::axiom_seq_subrange_len(r, 1, r.len() as int);
         assert(pmul(r, scale(h, q)) == padd(scale(c, scale(h, q)), shiftk(pmul(t, scale(h, q)), 1)));
         //  head: c·(h·q) ≡ (c·h)·q ≡ (h·c)·q ≡ h·(c·q)
         lemma_scale_scale(c, h, q);
@@ -846,6 +867,9 @@ pub proof fn lemma_pmul_comm<T: Ring>(p: Seq<T>, q: Seq<T>)
     } else {
         let h = p[0];
         let t = p.skip(1);
+        //  Len fact for the Lean gate: makes the recursion-termination obligation
+        //  omega-closable (see lemma_pmul_push).
+        vstd::seq::axiom_seq_subrange_len(p, 1, p.len() as int);
         //  decompose p in the second argument: p ≡ [h] + x·t
         lemma_cons_as_padd(p);
         lemma_pmul_cong_right(q, p, padd(seq![h], shiftk(t, 1)));
@@ -935,6 +959,9 @@ pub proof fn lemma_pmul_assoc<T: Ring>(p: Seq<T>, q: Seq<T>, r: Seq<T>)
     } else {
         let h = p[0];
         let t = p.skip(1);
+        //  Len fact for the Lean gate: makes the recursion-termination obligation
+        //  omega-closable (see lemma_pmul_push).
+        vstd::seq::axiom_seq_subrange_len(p, 1, p.len() as int);
         assert(pmul(p, q) == padd(scale(h, q), shiftk(pmul(t, q), 1)));
         //  (A + B) * r ≡ A*r + B*r
         lemma_pmul_padd_left(scale(h, q), shiftk(pmul(t, q), 1), r);
@@ -996,7 +1023,14 @@ pub proof fn lemma_pmul_one_left<T: Ring>(a: Seq<T>)
 {
     let one_p = seq![T::one()];
     assert(one_p.len() == 1);
+    //  Explicit axiom calls for the Lean gate (see lemma_pmul_push).
+    vstd::seq::axiom_seq_push_index_same(Seq::<T>::empty(), T::one(), 0);
     assert(one_p[0] == T::one());
+    vstd::seq::axiom_seq_subrange_len(one_p, 1, one_p.len() as int);
+    assert(one_p.skip(1).len() == Seq::<T>::empty().len());
+    assert forall|i: int| 0 <= i < one_p.skip(1).len() implies one_p.skip(1)[i] == Seq::<T>::empty()[i] by {
+    }
+    vstd::seq::axiom_seq_ext_equal(one_p.skip(1), Seq::<T>::empty());
     assert(one_p.skip(1) =~= Seq::<T>::empty());
     assert(pmul(one_p, a) == padd(scale(T::one(), a), shiftk(pmul(Seq::<T>::empty(), a), 1)));
     assert(pmul(Seq::<T>::empty(), a) == Seq::<T>::empty());
