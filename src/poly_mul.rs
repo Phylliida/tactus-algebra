@@ -45,13 +45,6 @@ pub proof fn lemma_padd_zpoly_left<T: Ring>(z: Seq<T>, p: Seq<T>)
 pub proof fn lemma_shiftk_zero<T: Ring>(p: Seq<T>)
     ensures shiftk(p, 0) == p,
 {
-    //  Ext-equal decomposition for the Lean gate: the bc_4 new-index rewrite's
-    //  side condition is exactly the forall guard (no arithmetic), and the
-    //  remaining ite collapses by split + omega on the guard.
-    vstd::seq::axiom_seq_ext_equal(shiftk(p, 0), p);
-    assert(shiftk(p, 0).len() == p.len());
-    assert forall|i: int| 0 <= i < shiftk(p, 0).len() implies shiftk(p, 0)[i] == p[i] by {
-    }
     assert(shiftk(p, 0) =~= p);
 }
 
