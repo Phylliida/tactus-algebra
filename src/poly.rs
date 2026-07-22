@@ -99,6 +99,16 @@ pub proof fn lemma_peqv_refl<T: Ring>(p: Seq<T>)
     }
 }
 
+///  Syntactic equality implies coefficient equivalence: the == bridge.
+///  Lets a proof turn a definitional-unfold fact (`pmul(p,q) == padd(...)`)
+///  into a peqv chain link with one named call (see the 2026-07-21 handoff).
+pub proof fn lemma_peqv_of_eq<T: Ring>(p: Seq<T>, q: Seq<T>)
+    requires p == q,
+    ensures peqv(p, q),
+{
+    lemma_peqv_refl(p);
+}
+
 pub proof fn lemma_peqv_sym<T: Ring>(p: Seq<T>, q: Seq<T>)
     requires peqv(p, q),
     ensures peqv(q, p),
@@ -366,9 +376,14 @@ pub proof fn lemma_drop_last_peqv<T: Ring>(p: Seq<T>)
 {
     assert forall|i: int| (#[trigger] coeff(p, i)).eqv(coeff(p.drop_last(), i)) by {
         if 0 <= i < p.len() - 1 {
+            //  In range of both: the subrange read, for the Lean gate.
+            vstd::seq::axiom_seq_subrange_index(p, 0, (p.len() - 1) as int, i);
+            assert(coeff(p.drop_last(), i) == coeff(p, i));
             T::axiom_eqv_reflexive(coeff(p, i));
         } else if i == p.len() - 1 {
             //  coeff(p, i) is the last entry (≡ 0); the dropped poly reads 0.
+            vstd::seq::axiom_seq_subrange_len(p, 0, (p.len() - 1) as int);
+            assert(p.drop_last().len() == p.len() - 1);
             assert(coeff(p.drop_last(), i) == T::zero());
         } else {
             T::axiom_eqv_reflexive(T::zero());

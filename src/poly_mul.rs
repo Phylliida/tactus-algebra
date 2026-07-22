@@ -231,6 +231,22 @@ pub proof fn lemma_pmul_push<T: Ring>(p: Seq<T>, c: T, q: Seq<T>)
         assert((t.len() + 1) as nat == p.len());
         assert(shiftk(scale(c, q), (t.len() + 1) as nat) == shiftk(scale(c, q), p.len()));
         assert(shiftk(shiftk(scale(c, q), t.len()), 1) == shiftk(scale(c, q), p.len()));
+        //  The second trans leg as single links for the Lean gate:
+        //  shiftk_padd (226) then padd_cong of refl and the == bridge (233).
+        lemma_peqv_of_eq(
+            shiftk(shiftk(scale(c, q), t.len()), 1),
+            shiftk(scale(c, q), p.len()),
+        );
+        lemma_peqv_refl(shiftk(pmul(t, q), 1));
+        lemma_padd_cong(
+            shiftk(pmul(t, q), 1), shiftk(pmul(t, q), 1),
+            shiftk(shiftk(scale(c, q), t.len()), 1), shiftk(scale(c, q), p.len()),
+        );
+        lemma_peqv_trans(
+            shiftk(padd(pmul(t, q), shiftk(scale(c, q), t.len())), 1),
+            padd(shiftk(pmul(t, q), 1), shiftk(shiftk(scale(c, q), t.len()), 1)),
+            padd(shiftk(pmul(t, q), 1), shiftk(scale(c, q), p.len())),
+        );
         lemma_peqv_trans(
             shiftk(pmul(t.push(c), q), 1),
             shiftk(padd(pmul(t, q), shiftk(scale(c, q), t.len())), 1),
@@ -284,6 +300,23 @@ pub proof fn lemma_pmul_pad<T: Ring>(p: Seq<T>, k: nat, q: Seq<T>)
         lemma_zpoly_scale(T::zero(), q);
         lemma_zpoly_shiftk(scale(T::zero(), q), k1);
         lemma_padd_zpoly_right(pmul(pad(p, k1), q), shiftk(scale(T::zero(), q), k1));
+        //  The first trans leg as single links for the Lean gate:
+        //  == push bridge (279), pmul_push (280), then the len rewrite (281).
+        lemma_peqv_of_eq(pmul(pad(p, k), q), pmul(pad(p, k1).push(T::zero()), q));
+        lemma_peqv_trans(
+            pmul(pad(p, k), q),
+            pmul(pad(p, k1).push(T::zero()), q),
+            padd(pmul(pad(p, k1), q), shiftk(scale(T::zero(), q), pad(p, k1).len())),
+        );
+        lemma_peqv_of_eq(
+            padd(pmul(pad(p, k1), q), shiftk(scale(T::zero(), q), pad(p, k1).len())),
+            padd(pmul(pad(p, k1), q), shiftk(scale(T::zero(), q), k1)),
+        );
+        lemma_peqv_trans(
+            pmul(pad(p, k), q),
+            padd(pmul(pad(p, k1), q), shiftk(scale(T::zero(), q), pad(p, k1).len())),
+            padd(pmul(pad(p, k1), q), shiftk(scale(T::zero(), q), k1)),
+        );
         lemma_peqv_trans(
             pmul(pad(p, k), q),
             padd(pmul(pad(p, k1), q), shiftk(scale(T::zero(), q), k1)),

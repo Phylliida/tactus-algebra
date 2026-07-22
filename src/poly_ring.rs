@@ -412,7 +412,15 @@ pub proof fn lemma_cons_as_padd<T: Ring>(x: Seq<T>)
         lemma_coeff_shiftk(x.skip(1), 1, i);
         if i == 0 {
             //  x[0] vs x[0] + 0
+            //  Explicit seq facts for the Lean gate: the len closes by the
+            //  push_len/empty rewrites; the index is the axiom's ret-hyp.
+            assert(h.len() == 1);
+            vstd::seq::axiom_seq_push_index_same(Seq::<T>::empty(), x[0], 0);
             assert(coeff(h, 0) == x[0]);
+            //  coeff(st, 0) is the shiftk head: zero. Verbatim restatement of
+            //  the 412 ret-hyp, then the ite arithmetic.
+            assert(coeff(st, 0).eqv(if 0 < 1 { T::zero() } else { coeff(x.skip(1), 0 - 1) }));
+            assert((if 0 < 1 { T::zero() } else { coeff(x.skip(1), 0 - 1) }) == T::zero());
             lemma_add_cong_right(x[0], coeff(st, 0), T::zero());
             T::axiom_add_zero_right(x[0]);
             T::axiom_eqv_transitive(
@@ -430,7 +438,15 @@ pub proof fn lemma_cons_as_padd<T: Ring>(x: Seq<T>)
         } else if 0 < i < x.len() {
             //  x[i] vs 0 + x[i]  (the shifted tail reads x[i] at position i)
             assert(coeff(h, i) == T::zero());
+            //  433: restate the 412 ret-hyp verbatim, then the ite arithmetic
+            //  (0 < i collapses the guard); the two rewrite into the goal.
+            assert(coeff(st, i).eqv(if i < 1 { T::zero() } else { coeff(x.skip(1), i - 1) }));
+            assert((if i < 1 { T::zero() } else { coeff(x.skip(1), i - 1) }) == coeff(x.skip(1), i - 1));
             assert(coeff(st, i).eqv(coeff(x.skip(1), i - 1)));
+            //  434: the subrange read, with the (i-1)+1 == i bridge explicit.
+            vstd::seq::axiom_seq_subrange_len(x, 1, x.len() as int);
+            vstd::seq::axiom_seq_subrange_index(x, 1, x.len() as int, i - 1);
+            assert((i - 1) + 1 == i);
             assert(coeff(x.skip(1), i - 1) == x[i]);
             T::axiom_eqv_reflexive(T::zero());
             lemma_add_cong_both(coeff(h, i), T::zero(), coeff(st, i), x[i]);
@@ -451,6 +467,12 @@ pub proof fn lemma_cons_as_padd<T: Ring>(x: Seq<T>)
             //  out of range on both sides: 0 vs 0 + 0
             assert(coeff(x, i) == T::zero());
             assert(coeff(h, i) == T::zero());
+            //  454: len st = len x via the subrange_len ret-hyp, so the
+            //  guard is arithmetically false; == then refl for the eqv.
+            vstd::seq::axiom_seq_subrange_len(x, 1, x.len() as int);
+            assert(st.len() == x.len());
+            assert(coeff(st, i) == T::zero());
+            T::axiom_eqv_reflexive(T::zero());
             assert(coeff(st, i).eqv(T::zero()));
             lemma_add_cong_right(T::zero(), coeff(st, i), T::zero());
             lemma_zero_add_zero::<T>();
@@ -487,6 +509,9 @@ pub proof fn lemma_pmul_empty_right<T: Ring>(q: Seq<T>)
     decreases q.len(),
 {
     if q.len() == 0 {
+        //  == fact for the Lean gate: zpoly of the product rewrites to
+        //  zpoly of the empty seq, which is the ret-hyp below.
+        assert(pmul(q, Seq::<T>::empty()) == Seq::<T>::empty());
         lemma_zpoly_empty::<T>();
     } else {
         let t = q.skip(1);
@@ -510,6 +535,10 @@ pub proof fn lemma_pmul_cong_right<T: Ring>(p: Seq<T>, q1: Seq<T>, q2: Seq<T>)
     decreases p.len(),
 {
     if p.len() == 0 {
+        //  == facts for the Lean gate: both products rewrite to empty, so
+        //  the peqv postcondition closes against the refl ret-hyp.
+        assert(pmul(p, q1) == Seq::<T>::empty());
+        assert(pmul(p, q2) == Seq::<T>::empty());
         lemma_peqv_refl(pmul(p, q1));
     } else {
         let t = p.skip(1);
@@ -534,6 +563,11 @@ pub proof fn lemma_pmul_padd_right<T: Ring>(p: Seq<T>, q: Seq<T>, r: Seq<T>)
     decreases p.len(),
 {
     if p.len() == 0 {
+        //  == facts for the Lean gate: let the =~= goal rewrite to
+        //  `padd empty empty =~= empty` (the scale(x, empty) shape).
+        assert(pmul(p, q) == Seq::<T>::empty());
+        assert(pmul(p, r) == Seq::<T>::empty());
+        assert(pmul(p, padd(q, r)) == Seq::<T>::empty());
         assert(padd(pmul(p, q), pmul(p, r)) =~= Seq::<T>::empty());
         lemma_peqv_refl(Seq::<T>::empty());
     } else {
@@ -561,6 +595,19 @@ pub proof fn lemma_pmul_padd_right<T: Ring>(p: Seq<T>, q: Seq<T>, r: Seq<T>)
         );
         //  regroup (h·q + h·r) + (x(t*q) + x(t*r)) into (h·q + x(t*q)) + (h·r + x(t*r))
         lemma_padd_regroup(scale(h, q), scale(h, r), shiftk(pmul(t, q), 1), shiftk(pmul(t, r), 1));
+        //  The first trans leg as single links (the Lean gate matches each
+        //  requires against ONE named fact): == unfold bridge (peqv_of_eq),
+        //  then the padd_cong fact (558).
+        lemma_peqv_of_eq(
+            pmul(p, padd(q, r)),
+            padd(scale(h, padd(q, r)), shiftk(pmul(t, padd(q, r)), 1)),
+        );
+        lemma_peqv_trans(
+            pmul(p, padd(q, r)),
+            padd(scale(h, padd(q, r)), shiftk(pmul(t, padd(q, r)), 1)),
+            padd(padd(scale(h, q), scale(h, r)),
+                 padd(shiftk(pmul(t, q), 1), shiftk(pmul(t, r), 1))),
+        );
         lemma_peqv_trans(
             pmul(p, padd(q, r)),
             padd(padd(scale(h, q), scale(h, r)),
@@ -570,6 +617,23 @@ pub proof fn lemma_pmul_padd_right<T: Ring>(p: Seq<T>, q: Seq<T>, r: Seq<T>)
         );
         assert(pmul(p, q) == padd(scale(h, q), shiftk(pmul(t, q), 1)));
         assert(pmul(p, r) == padd(scale(h, r), shiftk(pmul(t, r), 1)));
+        //  Fold the == forms back into pmul(p, ·) with single links.
+        //  (peqv_of_eq takes the pmul-headed == so the precondition is a
+        //  form-B unfold, not a Seq-Eq simp target.)
+        lemma_peqv_of_eq(pmul(p, q), padd(scale(h, q), shiftk(pmul(t, q), 1)));
+        lemma_peqv_of_eq(pmul(p, r), padd(scale(h, r), shiftk(pmul(t, r), 1)));
+        lemma_peqv_sym(pmul(p, q), padd(scale(h, q), shiftk(pmul(t, q), 1)));
+        lemma_peqv_sym(pmul(p, r), padd(scale(h, r), shiftk(pmul(t, r), 1)));
+        lemma_padd_cong(
+            padd(scale(h, q), shiftk(pmul(t, q), 1)), pmul(p, q),
+            padd(scale(h, r), shiftk(pmul(t, r), 1)), pmul(p, r),
+        );
+        lemma_peqv_trans(
+            pmul(p, padd(q, r)),
+            padd(padd(scale(h, q), shiftk(pmul(t, q), 1)),
+                 padd(scale(h, r), shiftk(pmul(t, r), 1))),
+            padd(pmul(p, q), pmul(p, r)),
+        );
     }
 }
 
@@ -579,6 +643,8 @@ pub proof fn lemma_pmul_pneg_right<T: Ring>(p: Seq<T>, q: Seq<T>)
     decreases p.len(),
 {
     if p.len() == 0 {
+        assert(pmul(p, q) == Seq::<T>::empty());
+        assert(pmul(p, pneg(q)) == Seq::<T>::empty());
         assert(pneg(pmul(p, q)) =~= Seq::<T>::empty());
         lemma_peqv_refl(Seq::<T>::empty());
     } else {
@@ -608,6 +674,15 @@ pub proof fn lemma_pmul_pneg_right<T: Ring>(p: Seq<T>, q: Seq<T>)
             pneg(padd(scale(h, q), shiftk(pmul(t, q), 1))),
         );
         assert(pmul(p, q) == padd(scale(h, q), shiftk(pmul(t, q), 1)));
+        //  Fold: pneg of the == form, single links for the Lean gate.
+        lemma_peqv_of_eq(pmul(p, q), padd(scale(h, q), shiftk(pmul(t, q), 1)));
+        lemma_peqv_sym(pmul(p, q), padd(scale(h, q), shiftk(pmul(t, q), 1)));
+        lemma_pneg_cong(padd(scale(h, q), shiftk(pmul(t, q), 1)), pmul(p, q));
+        lemma_peqv_trans(
+            pmul(p, pneg(q)),
+            pneg(padd(scale(h, q), shiftk(pmul(t, q), 1))),
+            pneg(pmul(p, q)),
+        );
     }
 }
 
@@ -679,6 +754,15 @@ pub proof fn lemma_pmul_psub_right<T: Ring>(p: Seq<T>, q: Seq<T>, r: Seq<T>)
         pmul(p, q), pmul(p, q),
         pmul(p, pneg(r)), pneg(pmul(p, r)),
     );
+    //  psub unfolds to padd(·, pneg ·): name the == and bridge it, so the
+    //  first trans leg is a single-hop match against padd_right's ensures.
+    assert(psub(q, r) =~= padd(q, pneg(r)));
+    lemma_peqv_of_eq(pmul(p, psub(q, r)), pmul(p, padd(q, pneg(r))));
+    lemma_peqv_trans(
+        pmul(p, psub(q, r)),
+        pmul(p, padd(q, pneg(r))),
+        padd(pmul(p, q), pmul(p, pneg(r))),
+    );
     lemma_peqv_trans(
         pmul(p, psub(q, r)),
         padd(pmul(p, q), pmul(p, pneg(r))),
@@ -692,6 +776,7 @@ pub proof fn lemma_pmul_singleton_right<T: Ring>(q: Seq<T>, v: T)
     decreases q.len(),
 {
     if q.len() == 0 {
+        assert(pmul(q, seq![v]) == Seq::<T>::empty());
         assert(scale(v, q) =~= Seq::<T>::empty());
         lemma_peqv_refl(Seq::<T>::empty());
     } else {
@@ -726,7 +811,62 @@ pub proof fn lemma_pmul_singleton_right<T: Ring>(q: Seq<T>, v: T)
         assert(scale(v, q)[0] == v.mul(h));
         assert(scale(v, q).skip(1) =~= scale(v, t));
         assert(seq![scale(v, q)[0]] =~= seq![v.mul(h)]);
-        lemma_peqv_sym(scale(v, q), padd(seq![v.mul(h)], shiftk(scale(v, t), 1)));
+        //  peqv(pmul(q, [v]), mid) as single links for the Lean gate:
+        //  == unfold (703), then padd_cong of the head and tail facts.
+        lemma_peqv_of_eq(pmul(q, seq![v]), padd(scale(h, seq![v]), shiftk(pmul(t, seq![v]), 1)));
+        //  peqv(scale(h, [v]), [h·v]) at the coeff level: the == form's
+        //  Seq-Eq goal explodes under the ext-equal broadcast haves.
+        assert forall|i: int| (#[trigger] coeff(scale(h, seq![v]), i)).eqv(coeff(seq![h.mul(v)], i)) by {
+            lemma_coeff_scale(h, seq![v], i);
+            assert((seq![v]).len() == 1);
+            assert((seq![h.mul(v)]).len() == 1);
+            vstd::seq::axiom_seq_push_index_same(Seq::<T>::empty(), v, 0);
+            vstd::seq::axiom_seq_push_index_same(Seq::<T>::empty(), h.mul(v), 0);
+            if i == 0 {
+                T::axiom_eqv_reflexive(h.mul(v));
+            } else {
+                assert(coeff(seq![v], i) == T::zero());
+                assert(coeff(seq![h.mul(v)], i) == T::zero());
+                T::axiom_mul_zero_right(h);
+                T::axiom_eqv_transitive(
+                    coeff(scale(h, seq![v]), i),
+                    h.mul(T::zero()),
+                    T::zero(),
+                );
+            }
+        }
+        assert(peqv(scale(h, seq![v]), seq![h.mul(v)]));
+        lemma_padd_cong(
+            scale(h, seq![v]), seq![h.mul(v)],
+            shiftk(pmul(t, seq![v]), 1), shiftk(scale(v, t), 1),
+        );
+        lemma_peqv_trans(
+            pmul(q, seq![v]),
+            padd(scale(h, seq![v]), shiftk(pmul(t, seq![v]), 1)),
+            padd(seq![v.mul(h)], shiftk(scale(v, t), 1)),
+        );
+        //  peqv(mid, scale(v, q)) as single links: padd_cong of the cons
+        //  facts (728, 727), sym, then sym of cons_as_padd (724).
+        lemma_peqv_of_eq(seq![scale(v, q)[0]], seq![v.mul(h)]);
+        //  shiftk of the skip congruence: 727's =~= fact is the peqv_of_eq
+        //  precondition verbatim, and shiftk_cong lifts it — no Seq-Eq
+        //  simp goal anywhere on this path.
+        lemma_peqv_of_eq(scale(v, q).skip(1), scale(v, t));
+        lemma_shiftk_cong(scale(v, q).skip(1), scale(v, t), 1);
+        lemma_padd_cong(
+            seq![scale(v, q)[0]], seq![v.mul(h)],
+            shiftk(scale(v, q).skip(1), 1), shiftk(scale(v, t), 1),
+        );
+        lemma_peqv_sym(
+            padd(seq![scale(v, q)[0]], shiftk(scale(v, q).skip(1), 1)),
+            padd(seq![v.mul(h)], shiftk(scale(v, t), 1)),
+        );
+        lemma_peqv_sym(scale(v, q), padd(seq![scale(v, q)[0]], shiftk(scale(v, q).skip(1), 1)));
+        lemma_peqv_trans(
+            padd(seq![v.mul(h)], shiftk(scale(v, t), 1)),
+            padd(seq![scale(v, q)[0]], shiftk(scale(v, q).skip(1), 1)),
+            scale(v, q),
+        );
         lemma_peqv_trans(
             pmul(q, seq![v]),
             padd(seq![v.mul(h)], shiftk(scale(v, t), 1)),
@@ -744,6 +884,7 @@ pub proof fn lemma_pmul_shiftk_right<T: Ring>(q: Seq<T>, x: Seq<T>, k: nat)
         lemma_zpoly_empty::<T>();
         lemma_zpoly_shiftk(Seq::<T>::empty(), k);
         assert(pmul(q, shiftk(x, k)) == Seq::<T>::empty());
+        assert(pmul(q, x) == Seq::<T>::empty());
         assert(shiftk(pmul(q, x), k) == shiftk(Seq::<T>::empty(), k));
         lemma_zpoly_to_peqv(Seq::<T>::empty(), shiftk(Seq::<T>::empty(), k));
     } else {
@@ -760,6 +901,14 @@ pub proof fn lemma_pmul_shiftk_right<T: Ring>(q: Seq<T>, x: Seq<T>, k: nat)
         lemma_shiftk_cong(pmul(t, shiftk(x, k)), shiftk(pmul(t, x), k), 1);
         lemma_shiftk_compose(pmul(t, x), k);
         assert(shiftk(shiftk(pmul(t, x), k), 1) == shiftk(pmul(t, x), (k + 1) as nat));
+        //  peqv(shiftk(pmul(t, shiftk(x,k)),1), shiftk(pmul(t,x),(k+1))) as
+        //  two links for the Lean gate: shiftk_cong (760) + == bridge (762).
+        lemma_peqv_of_eq(shiftk(shiftk(pmul(t, x), k), 1), shiftk(pmul(t, x), (k + 1) as nat));
+        lemma_peqv_trans(
+            shiftk(pmul(t, shiftk(x, k)), 1),
+            shiftk(shiftk(pmul(t, x), k), 1),
+            shiftk(pmul(t, x), (k + 1) as nat),
+        );
         //  combine
         lemma_padd_cong(
             scale(h, shiftk(x, k)), shiftk(scale(h, x), k),
@@ -770,6 +919,28 @@ pub proof fn lemma_pmul_shiftk_right<T: Ring>(q: Seq<T>, x: Seq<T>, k: nat)
         lemma_shiftk_padd(scale(h, x), shiftk(pmul(t, x), 1), k);
         lemma_shiftk_compose_inner(pmul(t, x), k);
         assert(shiftk(shiftk(pmul(t, x), 1), k) == shiftk(pmul(t, x), (k + 1) as nat));
+        //  shiftk(pmul(q,x),k) ≡ padd(shiftk(scale(h,x),k), shiftk(pmul(t,x),(k+1)))
+        //  in three links: == bridge (769), shiftk_padd (770), compose cong (772).
+        lemma_peqv_of_eq(
+            shiftk(pmul(q, x), k),
+            shiftk(padd(scale(h, x), shiftk(pmul(t, x), 1)), k),
+        );
+        lemma_peqv_of_eq(shiftk(shiftk(pmul(t, x), 1), k), shiftk(pmul(t, x), (k + 1) as nat));
+        lemma_peqv_refl(shiftk(scale(h, x), k));
+        lemma_padd_cong(
+            shiftk(scale(h, x), k), shiftk(scale(h, x), k),
+            shiftk(shiftk(pmul(t, x), 1), k), shiftk(pmul(t, x), (k + 1) as nat),
+        );
+        lemma_peqv_trans(
+            shiftk(padd(scale(h, x), shiftk(pmul(t, x), 1)), k),
+            padd(shiftk(scale(h, x), k), shiftk(shiftk(pmul(t, x), 1), k)),
+            padd(shiftk(scale(h, x), k), shiftk(pmul(t, x), (k + 1) as nat)),
+        );
+        lemma_peqv_trans(
+            shiftk(pmul(q, x), k),
+            shiftk(padd(scale(h, x), shiftk(pmul(t, x), 1)), k),
+            padd(shiftk(scale(h, x), k), shiftk(pmul(t, x), (k + 1) as nat)),
+        );
         lemma_peqv_sym(
             shiftk(pmul(q, x), k),
             padd(shiftk(scale(h, x), k), shiftk(pmul(t, x), (k + 1) as nat)),
@@ -802,6 +973,8 @@ pub proof fn lemma_pmul_scale_right<T: Ring>(r: Seq<T>, h: T, q: Seq<T>)
     decreases r.len(),
 {
     if r.len() == 0 {
+        assert(pmul(r, q) == Seq::<T>::empty());
+        assert(pmul(r, scale(h, q)) == Seq::<T>::empty());
         assert(scale(h, pmul(r, q)) =~= Seq::<T>::empty());
         lemma_peqv_refl(Seq::<T>::empty());
     } else {
@@ -845,6 +1018,15 @@ pub proof fn lemma_pmul_scale_right<T: Ring>(r: Seq<T>, h: T, q: Seq<T>)
             scale(h, padd(scale(c, q), shiftk(pmul(t, q), 1))),
         );
         assert(pmul(r, q) == padd(scale(c, q), shiftk(pmul(t, q), 1)));
+        //  Fold: scale of the == form, single links for the Lean gate.
+        lemma_peqv_of_eq(pmul(r, q), padd(scale(c, q), shiftk(pmul(t, q), 1)));
+        lemma_peqv_sym(pmul(r, q), padd(scale(c, q), shiftk(pmul(t, q), 1)));
+        lemma_scale_cong_poly(h, padd(scale(c, q), shiftk(pmul(t, q), 1)), pmul(r, q));
+        lemma_peqv_trans(
+            pmul(r, scale(h, q)),
+            scale(h, padd(scale(c, q), shiftk(pmul(t, q), 1))),
+            scale(h, pmul(r, q)),
+        );
     }
 }
 
@@ -985,6 +1167,15 @@ pub proof fn lemma_pmul_assoc<T: Ring>(p: Seq<T>, q: Seq<T>, r: Seq<T>)
         lemma_padd_cong(
             pmul(scale(h, q), r), scale(h, pmul(q, r)),
             pmul(shiftk(pmul(t, q), 1), r), shiftk(pmul(t, pmul(q, r)), 1),
+        );
+        //  The first trans leg as two links for the Lean gate:
+        //  pmul_cong_left of the == unfold (965), then pmul_padd_left (967).
+        lemma_peqv_of_eq(pmul(p, q), padd(scale(h, q), shiftk(pmul(t, q), 1)));
+        lemma_pmul_cong_left(pmul(p, q), padd(scale(h, q), shiftk(pmul(t, q), 1)), r);
+        lemma_peqv_trans(
+            pmul(pmul(p, q), r),
+            pmul(padd(scale(h, q), shiftk(pmul(t, q), 1)), r),
+            padd(pmul(scale(h, q), r), pmul(shiftk(pmul(t, q), 1), r)),
         );
         lemma_peqv_trans(
             pmul(pmul(p, q), r),
