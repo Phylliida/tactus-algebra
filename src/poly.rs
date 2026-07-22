@@ -377,6 +377,7 @@ pub proof fn lemma_drop_last_peqv<T: Ring>(p: Seq<T>)
     assert forall|i: int| (#[trigger] coeff(p, i)).eqv(coeff(p.drop_last(), i)) by {
         if 0 <= i < p.len() - 1 {
             //  In range of both: the subrange read, for the Lean gate.
+            vstd::seq::axiom_seq_subrange_len(p, 0, (p.len() - 1) as int);
             vstd::seq::axiom_seq_subrange_index(p, 0, (p.len() - 1) as int, i);
             assert(coeff(p.drop_last(), i) == coeff(p, i));
             T::axiom_eqv_reflexive(coeff(p, i));

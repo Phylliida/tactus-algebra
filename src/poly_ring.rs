@@ -417,10 +417,12 @@ pub proof fn lemma_cons_as_padd<T: Ring>(x: Seq<T>)
             assert(h.len() == 1);
             vstd::seq::axiom_seq_push_index_same(Seq::<T>::empty(), x[0], 0);
             assert(coeff(h, 0) == x[0]);
-            //  coeff(st, 0) is the shiftk head: zero. Verbatim restatement of
-            //  the 412 ret-hyp, then the ite arithmetic.
-            assert(coeff(st, 0).eqv(if 0 < 1 { T::zero() } else { coeff(x.skip(1), 0 - 1) }));
+            //  coeff(st, 0) is the shiftk head: zero. Restate the 412
+            //  ret-hyp with i SYMBOLIC (form C can't rewrite a branch eq),
+            //  then collapse at i = 0 via the ite-arith assert.
+            assert(coeff(st, i).eqv(if i < 1 { T::zero() } else { coeff(x.skip(1), i - 1) }));
             assert((if 0 < 1 { T::zero() } else { coeff(x.skip(1), 0 - 1) }) == T::zero());
+            assert(coeff(st, 0).eqv(T::zero()));
             lemma_add_cong_right(x[0], coeff(st, 0), T::zero());
             T::axiom_add_zero_right(x[0]);
             T::axiom_eqv_transitive(
@@ -920,11 +922,10 @@ pub proof fn lemma_pmul_shiftk_right<T: Ring>(q: Seq<T>, x: Seq<T>, k: nat)
         lemma_shiftk_compose_inner(pmul(t, x), k);
         assert(shiftk(shiftk(pmul(t, x), 1), k) == shiftk(pmul(t, x), (k + 1) as nat));
         //  shiftk(pmul(q,x),k) ≡ padd(shiftk(scale(h,x),k), shiftk(pmul(t,x),(k+1)))
-        //  in three links: == bridge (769), shiftk_padd (770), compose cong (772).
-        lemma_peqv_of_eq(
-            shiftk(pmul(q, x), k),
-            shiftk(padd(scale(h, x), shiftk(pmul(t, x), 1)), k),
-        );
+        //  in three links: == bridge (769) + shiftk_cong, shiftk_padd (770),
+        //  compose cong (772). The shiftk-headed == is never a goal.
+        lemma_peqv_of_eq(pmul(q, x), padd(scale(h, x), shiftk(pmul(t, x), 1)));
+        lemma_shiftk_cong(pmul(q, x), padd(scale(h, x), shiftk(pmul(t, x), 1)), k);
         lemma_peqv_of_eq(shiftk(shiftk(pmul(t, x), 1), k), shiftk(pmul(t, x), (k + 1) as nat));
         lemma_peqv_refl(shiftk(scale(h, x), k));
         lemma_padd_cong(
